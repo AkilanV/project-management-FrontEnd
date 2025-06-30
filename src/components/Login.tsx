@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import {
   Container, Typography, TextField,
@@ -7,6 +8,8 @@ import {
 import { useSnackbar } from 'notistack';
 import carImg from '../assets/Images/bigstock-Car-Service.jpg';
 import type { User } from '../types/User';
+
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 const Login: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -17,15 +20,26 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
 
-  const handleLogin = () => {
-    const user: User = { username, role }; // Note: Role from local state (default is Viewer)
-    localStorage.setItem('user', JSON.stringify(user));
-    navigate('/projects');
+  const handleLogin = async () => {
+    try {
+      const response = await axios.post(`${API_BASE}/auth/login`, { username, password });
+      const user: User = response.data;
+      localStorage.setItem('user', JSON.stringify(user));
+      enqueueSnackbar('Login successful!', { variant: 'success' });
+      navigate('/projects');
+    } catch (error) {
+      enqueueSnackbar('Login failed. Please check credentials.', { variant: 'error' });
+    }
   };
 
-  const handleRegister = () => {
-    enqueueSnackbar('Registered successfully!', { variant: 'success' });
-    setIsSignUp(false); // Go back to login
+  const handleRegister = async () => {
+    try {
+      const response = await axios.post(`${API_BASE}/auth/register`, { username, password, role });
+      enqueueSnackbar('Registered successfully!', { variant: 'success' });
+      setIsSignUp(false);
+    } catch (error) {
+      enqueueSnackbar('Registration failed.', { variant: 'error' });
+    }
   };
 
   return (
@@ -62,7 +76,6 @@ const Login: React.FC = () => {
               onChange={(e) => setPassword(e.target.value)}
             />
 
-            {/* Role dropdown only during Sign Up */}
             {isSignUp && (
               <FormControl fullWidth>
                 <InputLabel id="role-label">Role</InputLabel>
