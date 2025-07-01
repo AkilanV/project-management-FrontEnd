@@ -13,7 +13,7 @@ const ProjectForm: React.FC = () => {
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
 
-  const API_URL = import.meta.env.VITE_BASE_URL || 'http://localhost:3000';
+  const API_URL = import.meta.env.VITE_BASE_URL;
 
   const handleCreateProject = async () => {
     if (!projectName.trim()) {

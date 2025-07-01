@@ -10,6 +10,8 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { io, Socket } from 'socket.io-client';
+import { useSnackbar } from 'notistack';
 import type { User } from '../types/User';
 
 interface Project {
@@ -25,13 +27,40 @@ const ProjectList: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [editOpen, setEditOpen] = useState(false);
   const [editProject, setEditProject] = useState<Project | null>(null);
+  const [socket, setSocket] = useState<Socket | null>(null);
 
   const user: User = JSON.parse(localStorage.getItem('user') || '{}');
   const navigate = useNavigate();
-  const API_URL = import.meta.env.VITE_BASE_URL || 'http://localhost:3000';
+  const { enqueueSnackbar } = useSnackbar();
+
+  const API_URL = import.meta.env.VITE_BASE_URL;
 
   useEffect(() => {
     fetchProjects();
+
+    const newSocket = io(API_URL);
+    setSocket(newSocket);
+
+    newSocket.on('projectCreated', (project: Project) => {
+      setProjects(prev => [project, ...prev]);
+      enqueueSnackbar(`New project created: ${project.name}`, { variant: 'info' });
+    });
+
+    newSocket.on('projectUpdated', (updated: Project) => {
+      setProjects(prev =>
+        prev.map(p => (p.id === updated.id ? updated : p))
+      );
+      enqueueSnackbar(`Project updated: ${updated.name}`, { variant: 'info' });
+    });
+
+    newSocket.on('projectDeleted', (id: number) => {
+      setProjects(prev => prev.filter(p => p.id !== id));
+      enqueueSnackbar(`Project deleted`, { variant: 'info' });
+    });
+
+    return () => {
+      newSocket.disconnect();
+    };
   }, []);
 
   const fetchProjects = async () => {
@@ -39,6 +68,7 @@ const ProjectList: React.FC = () => {
       const res = await axios.get(`${API_URL}/projects`);
       setProjects(res.data);
     } catch (error) {
+      enqueueSnackbar('Failed to fetch projects', { variant: 'error' });
       console.error('Error fetching projects:', error);
     }
   };
@@ -46,8 +76,10 @@ const ProjectList: React.FC = () => {
   const handleDelete = async (id: number) => {
     try {
       await axios.delete(`${API_URL}/projects/${id}`);
-      fetchProjects();
+      // enqueueSnackbar('Project deleted successfully', { variant: 'success' });
+      // No manual fetch, socket handles it
     } catch (error) {
+      enqueueSnackbar('Failed to delete project', { variant: 'error' });
       console.error('Error deleting project:', error);
     }
   };
@@ -69,9 +101,11 @@ const ProjectList: React.FC = () => {
           name: editProject.name,
           description: editProject.description,
         });
+        // enqueueSnackbar('Project updated successfully', { variant: 'success' });
         handleEditClose();
-        fetchProjects();
+        // No fetch needed; socket updates state
       } catch (error) {
+        enqueueSnackbar('Failed to update project', { variant: 'error' });
         console.error('Error updating project:', error);
       }
     }
@@ -159,13 +193,14 @@ const ProjectList: React.FC = () => {
       {/* Edit Dialog */}
       <Dialog open={editOpen} onClose={handleEditClose}>
         <DialogTitle>Edit Project</DialogTitle>
-        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 5, mt: 1 }}>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
           <TextField
             label="Project Name"
             fullWidth
-            sx={{ mt: 2}}
             value={editProject?.name || ''}
-            onChange={(e) => setEditProject(prev => prev ? { ...prev, name: e.target.value } : null)}
+            onChange={(e) =>
+              setEditProject(prev => prev ? { ...prev, name: e.target.value } : null)
+            }
           />
           <TextField
             label="Description"
@@ -173,12 +208,16 @@ const ProjectList: React.FC = () => {
             multiline
             minRows={3}
             value={editProject?.description || ''}
-            onChange={(e) => setEditProject(prev => prev ? { ...prev, description: e.target.value } : null)}
+            onChange={(e) =>
+              setEditProject(prev => prev ? { ...prev, description: e.target.value } : null)
+            }
           />
         </DialogContent>
         <DialogActions>
           <Button onClick={handleEditClose}>Cancel</Button>
-          <Button onClick={handleEditSave} variant="contained" color="primary">Save</Button>
+          <Button onClick={handleEditSave} variant="contained" color="primary">
+            Save
+          </Button>
         </DialogActions>
       </Dialog>
     </Container>

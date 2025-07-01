@@ -34,7 +34,7 @@ const Login: React.FC = () => {
 
   const handleRegister = async () => {
     try {
-      const response = await axios.post(`${API_BASE}/auth/register`, { username, password, role });
+      await axios.post(`${API_BASE}/auth/register`, { username, password, role });
       enqueueSnackbar('Registered successfully!', { variant: 'success' });
       setIsSignUp(false);
     } catch (error) {
