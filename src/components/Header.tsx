@@ -93,7 +93,7 @@ const isMobile = useMediaQuery("(max-width:820px)");
 
             <Typography variant="body1"
               sx={{mt: 1,fontSize: isMobile ? "1rem" : "1.25rem",fontWeight: "bold",color: "black",}}>
-              {user.username}</Typography>
+              {user.username}({user.role})</Typography>
 
             <Divider
               sx={{

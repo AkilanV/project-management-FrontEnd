@@ -126,9 +126,9 @@ const ProjectList: React.FC = () => {
       <Typography variant="h4" gutterBottom textAlign="center">
         Project Dashboard
       </Typography>
-      <Typography variant="subtitle1" textAlign="center" mb={3}>
+      {/* <Typography variant="subtitle1" textAlign="center" mb={3}>
         Welcome, <strong>{user.username}</strong> ({user.role})
-      </Typography>
+      </Typography> */}
 
       <Paper elevation={4} sx={{ p: 3 }}>
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
@@ -197,6 +197,7 @@ const ProjectList: React.FC = () => {
           <TextField
             label="Project Name"
             fullWidth
+            sx={{ mt: 2 }}
             value={editProject?.name || ''}
             onChange={(e) =>
               setEditProject(prev => prev ? { ...prev, name: e.target.value } : null)
